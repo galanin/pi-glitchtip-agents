@@ -1,12 +1,29 @@
 # @galanin/pi-glitchtip-agents
 
-pi agents + `gt` CLI to triage and fix GlitchTip issues, designed for weak local models.
+pi agents + `gt` CLI to triage and fix GlitchTip issues, designed for weak local models (e.g. `ollama/qwen3:35b`).
 
-Requires `@teelicht/pi-superagents`. See `skills/glitchtip-setup/SKILL.md` to configure the connection.
+## Requirements
+- [@teelicht/pi-superagents](https://github.com/teelicht/pi-superagents) installed (`pi install npm:@teelicht/pi-superagents`).
+- Node.js 18+.
+- A GlitchTip instance + API token.
 
-## Install (user-level)
-
+## Install
 ```sh
 pi install npm:@galanin/pi-glitchtip-agents
-npx @galanin/pi-glitchtip-agents        # symlinks agents, installs gt, merges tier
+npx @galanin/pi-glitchtip-agents        # symlinks agents, installs gt, merges glitchtip tier
 ```
+Then configure the connection — see the `glitchtip-setup` skill (`/skill:glitchtip-setup`).
+
+## Usage
+- `/sp-gt-triage [--since 2w]` — recent issues ranked by criticality.
+- `/sp-gt-fix <id> [lean|full]` — fix one issue (TDD red→green, no push/MR).
+- `gt issues|triage|issue <id>|event <id>|resolve <id>` — direct CLI.
+
+## Model
+Agents run on the `glitchtip` tier. Change it with pi's `/sp-settings`.
+
+## Layout
+- `gt/` — the `gt` CLI (REST/JSON over GlitchTip's Sentry-compatible API).
+- `agents/` — entrypoints (`sp-gt-*`) and bounded roles (`gt-*`).
+- `skills/glitchtip-setup/` — connection setup.
+- `install.mjs` — installer.

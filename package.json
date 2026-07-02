@@ -1,0 +1,17 @@
+{
+  "name": "@galanin/pi-glitchtip-agents",
+  "version": "0.1.0",
+  "description": "pi agents + gt CLI to triage and fix GlitchTip issues with weak local models",
+  "type": "module",
+  "bin": { "pi-glitchtip-agents": "install.mjs" },
+  "files": ["gt/", "agents/", "skills/", "install.mjs", "README.md", "CHANGELOG.md"],
+  "keywords": ["pi-package", "pi", "glitchtip", "agents", "subagents"],
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "pi": {
+    "skills": ["./skills"]
+  }
+}

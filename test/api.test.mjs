@@ -31,3 +31,24 @@ test("client throws on non-ok with body detail", async () => {
   const client = createClient({ baseUrl: "https://gt.example.com", token: "T" }, fetch);
   await assert.rejects(() => client.request("/api/0/issues/1/"), /401: bad token/);
 });
+
+test("client retries on 429 then succeeds", async () => {
+  let calls = 0;
+  const fetch = async () => {
+    calls++;
+    if (calls < 3) return { ok: false, status: 429, headers: { get: () => null }, json: async () => ({ detail: "rate" }) };
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  const client = createClient({ baseUrl: "https://gt.example.com", token: "T" }, fetch, { maxRetries: 3, baseDelayMs: 0 });
+  const data = await client.request("/api/0/issues/1/");
+  assert.equal(data.ok, true);
+  assert.equal(calls, 3);
+});
+
+test("client gives up after maxRetries on persistent 500", async () => {
+  let calls = 0;
+  const fetch = async () => { calls++; return { ok: false, status: 500, headers: { get: () => null }, json: async () => ({ detail: "boom" }) }; };
+  const client = createClient({ baseUrl: "https://gt.example.com", token: "T" }, fetch, { maxRetries: 2, baseDelayMs: 0 });
+  await assert.rejects(() => client.request("/api/0/issues/1/"), /500/);
+  assert.equal(calls, 3); // initial + 2 retries
+});

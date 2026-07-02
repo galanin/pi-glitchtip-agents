@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { loadConfig, saveConfig } from "./config.mjs";
 import { createClient } from "./api.mjs";
 import * as cmd from "./commands.mjs";
@@ -26,7 +27,7 @@ Write:
 Config file: ${CONFIG_PATH}
 Set GT_CONFIG_PATH to override.`;
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const [command, ...rest] = argv;
   const args = { _: [] };
   for (let i = 0; i < rest.length; i++) {
@@ -95,9 +96,11 @@ function out(data) {
   return 0;
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((err) => {
-    process.stderr.write(`error: ${err.message}\n`);
-    process.exit(1);
-  });
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
+    .then((code) => process.exit(code))
+    .catch((err) => {
+      process.stderr.write(`error: ${err.message}\n`);
+      process.exit(1);
+    });
+}

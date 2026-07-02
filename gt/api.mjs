@@ -6,9 +6,15 @@ export const ENDPOINTS = {
   latestEvent: (id) => `/api/0/issues/${id}/events/latest/`,
 };
 
-export function createClient(config, fetchImpl = fetch) {
+const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+
+export function createClient(config, fetchImpl = fetch, { maxRetries = 2, baseDelayMs = 200 } = {}) {
   const baseUrl = (config.baseUrl || "").replace(/\/+$/, "");
   const token = config.token;
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
   async function request(path, { query, method = "GET", body } = {}) {
     let url = baseUrl + path;
@@ -20,32 +26,44 @@ export function createClient(config, fetchImpl = fetch) {
       }
       url += `?${qs.toString()}`;
     }
-    const res = await fetchImpl(url, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    let payload;
-    try {
-      payload = await res.json();
-    } catch {
-      payload = {};
-    }
-    if (!res.ok) {
-      // Prefer the body's `detail` field (Sentry/GlitchTip convention); fall
-      // back to a JSON dump of the payload, or its string form for non-objects.
-      let detail;
-      if (payload && typeof payload === "object") {
-        detail = payload.detail != null ? String(payload.detail) : JSON.stringify(payload);
-      } else {
-        detail = String(payload);
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+    const init = { method, headers, body: body ? JSON.stringify(body) : undefined };
+
+    let lastErr;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      let res;
+      try {
+        res = await fetchImpl(url, init);
+      } catch (err) {
+        lastErr = err;
+        if (attempt < maxRetries) { await sleep(baseDelayMs * 2 ** attempt); continue; }
+        throw err;
       }
-      throw new Error(`${res.status}: ${detail}`);
+      let payload;
+      try {
+        payload = await res.json();
+      } catch {
+        payload = {};
+      }
+      if (!res.ok) {
+        const detail = payload && typeof payload === "object"
+          ? (payload.detail != null ? String(payload.detail) : JSON.stringify(payload))
+          : String(payload);
+        lastErr = new Error(`${res.status}: ${detail}`);
+        if (RETRYABLE.has(res.status) && attempt < maxRetries) {
+          const retryAfter = res.headers?.get?.("retry-after");
+          const delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : baseDelayMs * 2 ** attempt;
+          await sleep(delay);
+          continue;
+        }
+        throw lastErr;
+      }
+      return payload;
     }
-    return payload;
+    throw lastErr;
   }
 
   return { request };

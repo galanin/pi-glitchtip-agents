@@ -29,6 +29,10 @@ test("parseSince converts 2w to statsPeriod and 0 disables", () => {
   assert.equal(parseSince("0"), undefined);
 });
 
+test("parseSince 'none' disables statsPeriod", () => {
+  assert.equal(parseSince("none"), undefined);
+});
+
 test("issuesQuery builds query string from filters", () => {
   const q = issuesQuery({ since: "2w", status: "unresolved", query: "is:unresolved", limit: 10 });
   assert.equal(q.statsPeriod, "2w");

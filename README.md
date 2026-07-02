@@ -22,6 +22,14 @@ Then configure the connection — see the `glitchtip-setup` skill (`/skill:glitc
 ## Model
 Agents run on the `glitchtip` tier. Change it with pi's `/sp-settings`.
 
+**Local-model setup (important):** subagents launch with implicit extension
+discovery disabled (`--no-extensions`). If your model is served by a custom
+provider extension (e.g. an `ollama-native.ts` provider), you MUST add it to
+`superagents.extensions` in `~/.pi/agent/extensions/subagent/config.json`,
+otherwise the child falls back to the default model. Also, for **ollama-backed**
+tiers set `thinking: "off"` — a `:<level>` thinking suffix breaks ollama model
+resolution and silently falls back to the default provider.
+
 ## Layout
 - `gt/` — the `gt` CLI (REST/JSON over GlitchTip's Sentry-compatible API).
 - `agents/` — entrypoints (`sp-gt-*`) and bounded roles (`gt-*`).

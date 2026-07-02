@@ -20,7 +20,7 @@ const SP_CONFIG = path.join(homedir(), ".pi", "agent", "extensions", "subagent",
 const PKG_CONFIG_DIR = path.join(homedir(), ".config", "glitchtip-agents");
 const PKG_CONFIG = path.join(PKG_CONFIG_DIR, "config.json");
 
-export const DEFAULT_TIER = { model: "ollama/qwen3:35b", thinking: "low" };
+export const DEFAULT_TIER = { model: "ollama/qwen3:35b", thinking: "off" };
 export const DEFAULT_BRANCH_TEMPLATE = "fix/glitchtip/<short-id>";
 
 export function mergeTierIntoSuperagentsConfig(cfg, tier) {
@@ -85,6 +85,11 @@ function mergeTier() {
   const merged = mergeTierIntoSuperagentsConfig(cfg, DEFAULT_TIER);
   writeJSON(SP_CONFIG, merged);
   console.log(`merged glitchtip tier into ${SP_CONFIG}`);
+  console.warn("NOTE: subagents run with implicit extension discovery disabled.");
+  console.warn("      If your model needs a custom provider extension (e.g. ollama-native),");
+  console.warn("      add it to superagents.extensions in this config.json, e.g.");
+  console.warn("      \"/home/<user>/.pi/agent/extensions/ollama-native.ts\".");
+  console.warn("      Also: ollama-backed tiers must use thinking \"off\" (a :<level> suffix breaks ollama model resolution).");
 }
 
 function writeDefaults() {

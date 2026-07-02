@@ -12,11 +12,12 @@ test("LEVEL_RANK orders fatal>error>warning>info", () => {
   assert.ok(LEVEL_RANK.warning > LEVEL_RANK.info);
 });
 
-test("sortCriticality ranks by level, times_seen, last_seen, status", () => {
+// GlitchTip real field names: `count` (string times-seen), `lastSeen` (camelCase).
+test("sortCriticality ranks by level, count, lastSeen, status", () => {
   const issues = [
-    { id: 1, level: "warning", times_seen: 50, last_seen: "2026-07-01T00:00:00Z", status: "unresolved" },
-    { id: 2, level: "error", times_seen: 5, last_seen: "2026-07-02T00:00:00Z", status: "unresolved" },
-    { id: 3, level: "error", times_seen: 5, last_seen: "2026-07-02T00:00:00Z", status: "resolved" },
+    { id: 1, level: "warning", count: "50", lastSeen: "2026-07-01T00:00:00Z", status: "unresolved" },
+    { id: 2, level: "error", count: "5", lastSeen: "2026-07-02T00:00:00Z", status: "unresolved" },
+    { id: 3, level: "error", count: "5", lastSeen: "2026-07-02T00:00:00Z", status: "resolved" },
   ];
   const sorted = sortCriticality(issues).map((i) => i.id);
   // error unresolved (2) > error resolved (3) > warning unresolved (1)

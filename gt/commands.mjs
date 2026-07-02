@@ -23,11 +23,12 @@ export function sortCriticality(issues) {
     const la = LEVEL_RANK[a.level] ?? 0;
     const lb = LEVEL_RANK[b.level] ?? 0;
     if (lb !== la) return lb - la;
-    const ta = a.times_seen ?? 0;
-    const tb = b.times_seen ?? 0;
+    // GlitchTip exposes times-seen as the string field `count`.
+    const ta = Number(a.count) || 0;
+    const tb = Number(b.count) || 0;
     if (tb !== ta) return tb - ta;
-    const da = Date.parse(a.last_seen ?? 0) || 0;
-    const db = Date.parse(b.last_seen ?? 0) || 0;
+    const da = Date.parse(a.lastSeen ?? 0) || 0;
+    const db = Date.parse(b.lastSeen ?? 0) || 0;
     if (db !== da) return db - da;
     return (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9);
   });
@@ -35,9 +36,9 @@ export function sortCriticality(issues) {
 
 // --- handlers: each takes { client, config, args }, returns JSON-serialisable data ---
 
-export async function ping({ client }) {
-  // light probe: list a single issue to validate auth+url+org
-  return client.request(ENDPOINTS.issues("me"), { query: { limit: 1 } })
+export async function ping({ client, config }) {
+  // light probe: list a single issue for the configured org to validate auth+url+org
+  return client.request(ENDPOINTS.issues(config.org), { query: { limit: 1 } })
     .then(() => ({ ok: true }))
     .catch((err) => ({ ok: false, error: err.message }));
 }

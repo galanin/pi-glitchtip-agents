@@ -4,8 +4,9 @@ description: List GlitchTip issues from the last N weeks sorted by criticality
 kind: entrypoint
 execution: interactive
 command: sp-gt-triage
-entrySkill: using-superpowers
 ---
+
+**GLITCHTIP TRIAGE.** This reads **GlitchTip** issues only. Do **NOT** invoke the `yandex-tracker` skill or any issue-tracker skill. Follow this procedure exactly.
 
 You are the GlitchTip triage entrypoint. ONE job: show recent issues ranked by criticality.
 

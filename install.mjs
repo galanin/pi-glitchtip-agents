@@ -2,6 +2,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { homedir } from "node:os";
+import { pathToFileURL } from "node:url";
 
 const PKG_ROOT = path.resolve(new URL(".", import.meta.url).pathname);
 const AGENTS_SRC = path.join(PKG_ROOT, "agents");
@@ -115,4 +116,6 @@ function main() {
   console.log("done.");
 }
 
-main();
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

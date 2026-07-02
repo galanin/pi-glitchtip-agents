@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { loadConfig, saveConfig } from "./config.mjs";
 import { createClient } from "./api.mjs";
@@ -96,7 +97,7 @@ function out(data) {
   return 0;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   main()
     .then((code) => process.exit(code))
     .catch((err) => {

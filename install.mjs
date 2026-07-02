@@ -67,9 +67,13 @@ function symlinkAgents() {
 
 function installGt() {
   fs.mkdirSync(GT_BIN_DIR, { recursive: true });
-  fs.copyFileSync(GT_SRC, GT_BIN);
-  fs.chmodSync(GT_BIN, 0o755);
-  console.log(`installed gt -> ${GT_BIN}`);
+  // gt.mjs imports sibling modules (./config.mjs, ./api.mjs, ./commands.mjs) via
+  // relative paths, so the binary must resolve to the package's gt/ directory.
+  // Symlink (not copy) so relative imports resolve from the package location.
+  fs.rmSync(GT_BIN, { force: true });
+  fs.symlinkSync(GT_SRC, GT_BIN);
+  fs.chmodSync(GT_SRC, 0o755);
+  console.log(`linked gt -> ${GT_SRC}`);
 }
 
 function mergeTier() {
@@ -116,6 +120,6 @@ function main() {
   console.log("done.");
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
   main();
 }

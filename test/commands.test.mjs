@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sortCriticality, parseSince, issuesQuery, STATUS_RANK, LEVEL_RANK } from "../gt/commands.mjs";
+import { sortCriticality, parseSince, issuesQuery, STATUS_RANK, LEVEL_RANK, resolveIssueRef } from "../gt/commands.mjs";
 
 test("LEVEL_RANK orders fatal>error>warning>info", () => {
   // NOTE: JS does not support chained comparisons (a > b > c); the original
@@ -40,4 +40,21 @@ test("issuesQuery builds query string from filters", () => {
   assert.equal(q.query, "is:unresolved");
   assert.equal(q.limit, 10);
   assert.equal(q.status, "unresolved");
+});
+
+test("resolveIssueRef passes numeric ids through without API calls", async () => {
+  let called = false;
+  const client = { request: async () => { called = true; } };
+  assert.equal(await resolveIssueRef({ client, config: { org: "o" } }, "363"), "363");
+  assert.equal(called, false);
+});
+
+test("resolveIssueRef resolves a shortId via the issues list", async () => {
+  const client = { request: async () => [{ id: "363", shortId: "GRAD-STAGING-R" }] };
+  assert.equal(await resolveIssueRef({ client, config: { org: "o" } }, "GRAD-STAGING-R"), "363");
+});
+
+test("resolveIssueRef throws when shortId is not found", async () => {
+  const client = { request: async () => [] };
+  await assert.rejects(() => resolveIssueRef({ client, config: { org: "o" } }, "NOPE"), /shortId not found/);
 });

@@ -21,12 +21,13 @@ Connection & config:
 Read (JSON):
   gt issues [--since 2w] [--status unresolved|resolved|muted] [--query Q] [--limit N]
   gt triage [--since 2w] [--limit N]      pre-sorted by criticality
-  gt issue <id>
-  gt event <id>                           latest event (stacktrace/breadcrumbs)
-  gt archaeology <id> [--files f1,f2]     has the implicated code changed since the bug's release? (likely-fixed/unchanged/unknown)
+  gt find <id|shortId>                    resolve numeric id or shortId (e.g. GRAD-STAGING-R) to the issue
+  gt issue <id|shortId>
+  gt event <id|shortId>                   latest event (stacktrace/breadcrumbs)
+  gt archaeology <id|shortId> [--files f1,f2]  has the implicated code changed since the bug's release? (likely-fixed/unchanged/unknown)
 
 Write:
-  gt resolve <id> | gt unresolve <id> | gt mute <id>
+  gt resolve <id|shortId> | gt unresolve <id|shortId> | gt mute <id|shortId>
 
 Config file: ${CONFIG_PATH}
 Set GT_CONFIG_PATH to override.`;
@@ -85,15 +86,20 @@ async function main() {
 
   const handlers = {
     ping: cmd.ping, issues: cmd.issues, triage: cmd.triage,
-    issue: cmd.issue, event: cmd.event,
-    resolve: cmd.resolve, unresolve: cmd.unresolve, mute: cmd.mute,
-    archaeology: async ({ client, args }) => {
-      const issue = await client.request(ENDPOINTS.issue(args.id));
-      const event = await client.request(ENDPOINTS.latestEvent(args.id));
+    find: cmd.find,
+    issue: async (ctx) => cmd.issue({ ...ctx, args: { ...ctx.args, id: await cmd.resolveIssueRef(ctx, ctx.args.id) } }),
+    event: async (ctx) => cmd.event({ ...ctx, args: { ...ctx.args, id: await cmd.resolveIssueRef(ctx, ctx.args.id) } }),
+    resolve: async (ctx) => cmd.resolve({ ...ctx, args: { ...ctx.args, id: await cmd.resolveIssueRef(ctx, ctx.args.id) } }),
+    unresolve: async (ctx) => cmd.unresolve({ ...ctx, args: { ...ctx.args, id: await cmd.resolveIssueRef(ctx, ctx.args.id) } }),
+    mute: async (ctx) => cmd.mute({ ...ctx, args: { ...ctx.args, id: await cmd.resolveIssueRef(ctx, ctx.args.id) } }),
+    archaeology: async ({ client, config, args }) => {
+      const id = await cmd.resolveIssueRef({ client, config }, args.id);
+      const issue = await client.request(ENDPOINTS.issue(id));
+      const event = await client.request(ENDPOINTS.latestEvent(id));
       const releaseCommit = issue.lastRelease?.version || issue.firstRelease?.version;
       const extra = (args.files || "").split(",").map((s) => s.trim()).filter(Boolean);
       const files = [...new Set([...stackFiles(event), ...extra])];
-      return { issue: args.id, releaseCommit, ...archaeology({ cwd: process.cwd(), releaseCommit, files }) };
+      return { issue: id, shortId: issue.shortId, releaseCommit, ...archaeology({ cwd: process.cwd(), releaseCommit, files }) };
     },
   };
   const handler = handlers[command];

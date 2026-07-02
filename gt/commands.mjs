@@ -73,3 +73,35 @@ export async function unresolve({ client, args }) {
 export async function mute({ client, args }) {
   return client.request(ENDPOINTS.issue(args.id), { method: "PUT", body: { status: "muted" } });
 }
+
+// --- issue reference resolution (numeric id OR GlitchTip shortId like GRAD-STAGING-R) ---
+
+const IS_NUMERIC = /^\d+$/;
+
+/**
+ * Resolve a numeric id or a GlitchTip shortId to the numeric issue id.
+ *
+ * @param {{ client: object, config: object }} ctx Client + config (uses config.org).
+ * @param {string} ref Numeric id or shortId.
+ * @returns Numeric issue id as a string.
+ * @throws When a shortId cannot be found in the recent issues list.
+ */
+export async function resolveIssueRef({ client, config }, ref) {
+  const s = String(ref);
+  if (IS_NUMERIC.test(s)) return s;
+  const list = await client.request(ENDPOINTS.issues(config.org), { query: { statsPeriod: "90d", limit: 500 } });
+  const hit = (Array.isArray(list) ? list : []).find((i) => i.shortId === s);
+  if (!hit) throw new Error(`shortId not found: ${s}`);
+  return hit.id;
+}
+
+/**
+ * Find an issue by numeric id or shortId and return its full JSON.
+ */
+export async function find({ client, config, args }) {
+  if (IS_NUMERIC.test(String(args.id))) return client.request(ENDPOINTS.issue(args.id));
+  const list = await client.request(ENDPOINTS.issues(config.org), { query: { statsPeriod: "90d", limit: 500 } });
+  const hit = (Array.isArray(list) ? list : []).find((i) => i.shortId === args.id);
+  if (!hit) throw new Error(`shortId not found: ${args.id}`);
+  return hit;
+}

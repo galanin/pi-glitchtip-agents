@@ -18,6 +18,7 @@ Then configure the connection — see the `glitchtip-setup` skill (`/skill:glitc
 - `/sp-gt-triage [--since 2w]` — recent issues ranked by criticality.
 - `/sp-gt-fix <id> [lean|full]` — fix one issue (TDD red→green, no push/MR).
 - `gt issues|triage|issue <id>|event <id>|resolve <id>` — direct CLI.
+- `gt archaeology <id> [--files f1,f2]` — detect stale/already-fixed issues by checking whether the implicated code changed since the bug's release commit.
 
 ## Model
 Agents run on the `glitchtip` tier. Change it with pi's `/sp-settings`.

@@ -5,6 +5,8 @@ import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { loadConfig, saveConfig } from "./config.mjs";
 import { createClient } from "./api.mjs";
+import { ENDPOINTS } from "./api.mjs";
+import { stackFiles, archaeology } from "./archaeology.mjs";
 import * as cmd from "./commands.mjs";
 
 const CONFIG_PATH = process.env.GT_CONFIG_PATH ?? join(homedir(), ".config", "glitchtip-agents", "config.json");
@@ -21,6 +23,7 @@ Read (JSON):
   gt triage [--since 2w] [--limit N]      pre-sorted by criticality
   gt issue <id>
   gt event <id>                           latest event (stacktrace/breadcrumbs)
+  gt archaeology <id> [--files f1,f2]     has the implicated code changed since the bug's release? (likely-fixed/unchanged/unknown)
 
 Write:
   gt resolve <id> | gt unresolve <id> | gt mute <id>
@@ -84,6 +87,14 @@ async function main() {
     ping: cmd.ping, issues: cmd.issues, triage: cmd.triage,
     issue: cmd.issue, event: cmd.event,
     resolve: cmd.resolve, unresolve: cmd.unresolve, mute: cmd.mute,
+    archaeology: async ({ client, args }) => {
+      const issue = await client.request(ENDPOINTS.issue(args.id));
+      const event = await client.request(ENDPOINTS.latestEvent(args.id));
+      const releaseCommit = issue.lastRelease?.version || issue.firstRelease?.version;
+      const extra = (args.files || "").split(",").map((s) => s.trim()).filter(Boolean);
+      const files = [...new Set([...stackFiles(event), ...extra])];
+      return { issue: args.id, releaseCommit, ...archaeology({ cwd: process.cwd(), releaseCommit, files }) };
+    },
   };
   const handler = handlers[command];
   if (!handler) throw new Error(`unknown command: ${command}\n\n${HELP}`);

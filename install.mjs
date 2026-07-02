@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 
 const PKG_ROOT = path.resolve(new URL(".", import.meta.url).pathname);
 const AGENTS_SRC = path.join(PKG_ROOT, "agents");
+const SKILLS_SRC = path.join(PKG_ROOT, "skills");
 const GT_SRC = path.join(PKG_ROOT, "gt", "gt.mjs");
 const AGENT_FILES = [
   "sp-gt-triage.md", "sp-gt-fix.md",
@@ -14,6 +15,7 @@ const AGENT_FILES = [
 ];
 
 const USER_AGENTS_DIR = path.join(homedir(), ".pi", "agent", "agents");
+const USER_SKILLS_DIR = path.join(homedir(), ".pi", "agent", "skills");
 const GT_BIN_DIR = path.join(homedir(), ".local", "bin");
 const GT_BIN = path.join(GT_BIN_DIR, "gt");
 const SP_CONFIG = path.join(homedir(), ".pi", "agent", "extensions", "subagent", "config.json");
@@ -76,6 +78,28 @@ function installGt() {
   console.log(`linked gt -> ${GT_SRC}`);
 }
 
+// Discover skill directories (each containing SKILL.md) under skills/.
+function discoverSkillNames() {
+  if (!fs.existsSync(SKILLS_SRC)) return [];
+  return fs
+    .readdirSync(SKILLS_SRC, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && fs.existsSync(path.join(SKILLS_SRC, e.name, "SKILL.md")))
+    .map((e) => e.name);
+}
+
+function symlinkSkills() {
+  const names = discoverSkillNames();
+  if (names.length === 0) return;
+  fs.mkdirSync(USER_SKILLS_DIR, { recursive: true });
+  for (const name of names) {
+    const src = path.join(SKILLS_SRC, name);
+    const target = path.join(USER_SKILLS_DIR, name);
+    fs.rmSync(target, { force: true });
+    fs.symlinkSync(src, target);
+    console.log(`linked skill ${name} -> ${src}`);
+  }
+}
+
 function mergeTier() {
   if (!fs.existsSync(SP_CONFIG)) {
     console.warn(`superagents config not found at ${SP_CONFIG}; skipping tier merge (install @teelicht/pi-superagents first).`);
@@ -100,6 +124,7 @@ function writeDefaults() {
 
 function remove() {
   for (const f of AGENT_FILES) fs.rmSync(path.join(USER_AGENTS_DIR, f), { force: true });
+  for (const name of discoverSkillNames()) fs.rmSync(path.join(USER_SKILLS_DIR, name), { force: true });
   fs.rmSync(GT_BIN, { force: true });
   if (fs.existsSync(SP_CONFIG)) {
     const cfg = readJSON(SP_CONFIG, {});
@@ -108,7 +133,7 @@ function remove() {
       writeJSON(SP_CONFIG, cfg);
     }
   }
-  console.log("removed agent symlinks, gt binary, and glitchtip tier");
+  console.log("removed agent + skill symlinks, gt binary, and glitchtip tier");
 }
 
 function main() {
@@ -119,6 +144,7 @@ function main() {
     return;
   }
   symlinkAgents();
+  symlinkSkills();
   installGt();
   mergeTier();
   writeDefaults();

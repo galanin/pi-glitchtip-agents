@@ -4,6 +4,8 @@ description: Fix one GlitchTip issue in one iteration (TDD red→green, no push/
 kind: entrypoint
 execution: interactive
 command: sp-gt-fix
+entrySkill: glitchtip-fix-bootstrap
+skills: glitchtip-fix-bootstrap
 ---
 
 **GLITCHTIP ISSUE FIXER.** The task argument is a **GlitchTip** issue id or shortId (e.g. `GRAD-STAGING-R`). It is **NOT** a Yandex Tracker key, GitLab issue, or any other tracker — do **NOT** invoke the `yandex-tracker` skill or any issue-tracker skill, and do not search the codebase/git to "identify" the issue. Follow THIS procedure exactly; do not defer to skill discovery.
